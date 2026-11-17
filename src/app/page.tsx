@@ -1,7 +1,10 @@
 import RehearsalApp, { Playlist, Song } from '@/components/RehearsalApp'
+import { CHOIR_VOICE_TYPE_NAME } from '@/sanity/constants'
 import { client } from '@/sanity/lib/client'
 
 export const dynamic = 'force-dynamic'
+
+const DEMO_VOICE_TYPES = [CHOIR_VOICE_TYPE_NAME, 'Soprano 1', 'Alto', 'Bass', 'Lead']
 
 const DEMO_SONGS: Song[] = [
   {
@@ -10,20 +13,22 @@ const DEMO_SONGS: Song[] = [
     verses: [
       {
         name: 'Verse 1',
+        voiceTypes: ['Lead'],
         verseLines: [
-          'Amazing grace! How sweet the sound',
-          'That saved a wretch like me!',
-          'I once was lost, but now am found;',
-          'Was blind, but now I see.',
+          { text: 'Amazing grace! How sweet the sound', voiceTypes: [] },
+          { text: 'That saved a wretch like me!', voiceTypes: [] },
+          { text: 'I once was lost, but now am found;', voiceTypes: [] },
+          { text: 'Was blind, but now I see.', voiceTypes: [] },
         ],
       },
       {
         name: 'Verse 2',
+        voiceTypes: [],
         verseLines: [
-          "'Twas grace that taught my heart to fear,",
-          'And grace my fears relieved;',
-          'How precious did that grace appear',
-          'The hour I first believed.',
+          { text: "'Twas grace that taught my heart to fear,", voiceTypes: [] },
+          { text: 'And grace my fears relieved;', voiceTypes: [] },
+          { text: 'How precious did that grace appear', voiceTypes: [] },
+          { text: 'The hour I first believed.', voiceTypes: [] },
         ],
       },
     ],
@@ -34,20 +39,22 @@ const DEMO_SONGS: Song[] = [
     verses: [
       {
         name: 'Verse 1',
+        voiceTypes: ['Bass'],
         verseLines: [
-          'When the night has come',
-          'And the land is dark',
-          'And the moon is the only light we’ll see',
-          'No, I won’t be afraid',
-          'Oh, I won’t be afraid',
+          { text: 'When the night has come', voiceTypes: [] },
+          { text: 'And the land is dark', voiceTypes: [] },
+          { text: 'And the moon is the only light we’ll see', voiceTypes: [] },
+          { text: 'No, I won’t be afraid', voiceTypes: [] },
+          { text: 'Oh, I won’t be afraid', voiceTypes: ['Bass', 'Alto'] },
         ],
       },
       {
         name: 'Chorus',
+        voiceTypes: [],
         verseLines: [
-          'So darlin’, darlin’, stand by me',
-          'Oh, stand by me',
-          'Oh, stand, stand by me, stand by me',
+          { text: 'So darlin’, darlin’, stand by me', voiceTypes: [] },
+          { text: 'Oh, stand by me', voiceTypes: [] },
+          { text: 'Oh, stand, stand by me, stand by me', voiceTypes: [] },
         ],
       },
     ],
@@ -67,7 +74,11 @@ const SONG_FIELDS = `
   title,
   "verses": coalesce(verses[]{
     name,
-    "verseLines": coalesce(verseLines, [])
+    "voiceTypes": coalesce(voiceTypes[]->name, []),
+    "verseLines": coalesce(verseLines[]{
+      "text": select(defined(text) => text, @),
+      "voiceTypes": coalesce(voiceTypes[]->name, [])
+    }, [])
   }, []),
   "verseLines": coalesce(verseLines, [])
 `
@@ -84,27 +95,32 @@ const PLAYLISTS_QUERY = `*[_type == "playlist"] | order(title asc) {
   }, [])
 }`
 
+const VOICE_TYPES_QUERY = `*[_type == "voiceType"] | order(name asc).name`
+
 export default async function HomePage() {
   if (!client) {
     return (
       <RehearsalApp
         songs={DEMO_SONGS}
         playlists={DEMO_PLAYLISTS}
+        voiceTypes={DEMO_VOICE_TYPES}
         isConfigured={false}
       />
     )
   }
 
   try {
-    const [songs, playlists] = await Promise.all([
+    const [songs, playlists, voiceTypes] = await Promise.all([
       client.fetch<Song[]>(SONGS_QUERY),
       client.fetch<Playlist[]>(PLAYLISTS_QUERY),
+      client.fetch<string[]>(VOICE_TYPES_QUERY),
     ])
 
     return (
       <RehearsalApp
         songs={songs || []}
         playlists={playlists || []}
+        voiceTypes={voiceTypes || []}
         isConfigured={true}
       />
     )
@@ -114,6 +130,7 @@ export default async function HomePage() {
       <RehearsalApp
         songs={DEMO_SONGS}
         playlists={DEMO_PLAYLISTS}
+        voiceTypes={DEMO_VOICE_TYPES}
         isConfigured={false}
       />
     )
