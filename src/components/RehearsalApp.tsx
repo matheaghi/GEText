@@ -332,8 +332,8 @@ export default function RehearsalApp({
                   type="button"
                   onClick={() => toggleVoice(voice)}
                   className={`rounded-full border px-3 py-1 text-xs font-semibold transition active:scale-95 ${isSelected
-                      ? 'border-amber-600/80 bg-amber-600/90 text-stone-50 dark:border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-200'
-                      : 'border-stone-200/90 bg-stone-50/70 text-stone-500 hover:border-stone-300 hover:text-stone-700 dark:border-stone-700/60 dark:bg-stone-800/40 dark:text-stone-400 dark:hover:text-stone-200'
+                    ? 'border-amber-600/80 bg-amber-600/90 text-stone-50 dark:border-amber-400/50 dark:bg-amber-500/25 dark:text-amber-200'
+                    : 'border-stone-200/90 bg-stone-50/70 text-stone-500 hover:border-stone-300 hover:text-stone-700 dark:border-stone-700/60 dark:bg-stone-800/40 dark:text-stone-400 dark:hover:text-stone-200'
                     }`}
                 >
                   {voice}
@@ -391,15 +391,11 @@ export default function RehearsalApp({
                 <p className={`text-2xl font-bold leading-snug tracking-tight sm:text-4xl ${heading}`}>
                   {lines[lineIndex].text}
                 </p>
-                {!isAtLastLine ? (
-                  <p className="pt-2 text-xs font-medium text-stone-400 dark:text-stone-500">
-                    Try singing line {lineIndex + 2} before tapping Next →
-                  </p>
-                ) : (
-                  <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-emerald-700/85 dark:text-emerald-400/85">
-                    End of song
-                  </p>
-                )}
+                  { isAtLastLine && (
+                    <p className="pt-2 text-xs font-semibold uppercase tracking-wider text-emerald-700/85 dark:text-emerald-400/85">
+                      End of song
+                    </p>
+                  )}
               </div>
             )}
           </div>
