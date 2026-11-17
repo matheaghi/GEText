@@ -1,12 +1,17 @@
 @import "tailwindcss";
 
+/* Class-based dark mode: <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
+  color-scheme: light;
+}
+
+:root.dark {
   color-scheme: dark;
 }
 
 body {
-  background-color: #09090b;
-  color: #fafafa;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
