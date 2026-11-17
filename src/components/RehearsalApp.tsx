@@ -13,16 +13,52 @@ import {
 } from 'lucide-react'
 import ThemeToggle from './ThemeToggle'
 
+export interface Verse {
+  name?: string
+  verseLines: string[]
+}
+
 export interface Song {
   _id: string
   title: string
-  verseLines: string[]
+  verses?: Verse[]
+  verseLines?: string[]
 }
 
 export interface Playlist {
   _id: string
   title: string
   songs: Song[]
+}
+
+interface RehearsalLine {
+  text: string
+  verseName?: string
+}
+
+function expandSongLines(song: Song): RehearsalLine[] {
+  if (song.verses && song.verses.length > 0) {
+    const expanded: RehearsalLine[] = []
+    for (const verse of song.verses) {
+      const verseName = verse.name?.trim() || undefined
+      for (const text of verse.verseLines ?? []) {
+        expanded.push({ text, verseName })
+      }
+    }
+    return expanded
+  }
+
+  return (song.verseLines ?? []).map((text) => ({ text }))
+}
+
+function formatSongSummary(song: Song): string {
+  const lineCount = expandSongLines(song).length
+  const verseCount = song.verses?.length ?? 0
+  const linesLabel = `${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`
+  if (verseCount > 0) {
+    return `${verseCount} ${verseCount === 1 ? 'verse' : 'verses'} · ${linesLabel}`
+  }
+  return linesLabel
 }
 
 interface RehearsalAppProps {
@@ -77,7 +113,10 @@ export default function RehearsalApp({
   // 0..verseLines.length - 1 means showing that verse line
   const [lineIndex, setLineIndex] = useState<number>(-1)
 
-  const lines = selectedSong?.verseLines ?? []
+  const lines = React.useMemo(
+    () => (selectedSong ? expandSongLines(selectedSong) : []),
+    [selectedSong]
+  )
   const totalLines = lines.length
 
   const startSong = useCallback((song: Song) => {
@@ -209,8 +248,15 @@ export default function RehearsalApp({
                         </div>
                         ) : (
                         <div className="space-y-4">
+                          {lines[lineIndex].verseName && (
+                            <span
+                              className={`inline-block rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider ${accentText}`}
+                            >
+                              {lines[lineIndex].verseName}
+                            </span>
+                          )}
                           <p className={`text-2xl font-bold leading-snug tracking-tight sm:text-4xl ${heading}`}>
-                            {lines[lineIndex]}
+                            {lines[lineIndex].text}
                           </p>
                           {!isAtLastLine ? (
                               <p className="pt-2 text-xs font-medium text-stone-400 dark:text-stone-500">
@@ -316,7 +362,7 @@ export default function RehearsalApp({
                                             {song.title}
                                           </h2>
                                           <p className={`text-xs ${muted}`}>
-                                            {song.verseLines?.length || 0} lines
+                                            {formatSongSummary(song)}
                                           </p>
                                       </div>
                                   </div>
@@ -411,8 +457,7 @@ export default function RehearsalApp({
                                                 {song.title}
                                               </h2>
                                               <p className={`text-xs ${muted}`}>
-                                                {song.verseLines?.length || 0}{' '}
-                                                {song.verseLines?.length === 1 ? 'line' : 'lines'}
+                                                {formatSongSummary(song)}
                                               </p>
                                           </div>
                                         </div>

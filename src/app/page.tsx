@@ -7,27 +7,49 @@ const DEMO_SONGS: Song[] = [
   {
     _id: 'demo-1',
     title: 'Amazing Grace (Demo)',
-    verseLines: [
-      'Amazing grace! How sweet the sound',
-      'That saved a wretch like me!',
-      'I once was lost, but now am found;',
-      'Was blind, but now I see.',
-      "'Twas grace that taught my heart to fear,",
-      'And grace my fears relieved;',
-      'How precious did that grace appear',
-      'The hour I first believed.',
+    verses: [
+      {
+        name: 'Verse 1',
+        verseLines: [
+          'Amazing grace! How sweet the sound',
+          'That saved a wretch like me!',
+          'I once was lost, but now am found;',
+          'Was blind, but now I see.',
+        ],
+      },
+      {
+        name: 'Verse 2',
+        verseLines: [
+          "'Twas grace that taught my heart to fear,",
+          'And grace my fears relieved;',
+          'How precious did that grace appear',
+          'The hour I first believed.',
+        ],
+      },
     ],
   },
   {
     _id: 'demo-2',
     title: 'Stand By Me (Demo)',
-    verseLines: [
-      'When the night has come',
-      'And the land is dark',
-      'And the moon is the only light we’ll see',
-      'No, I won’t be afraid',
-      'Oh, I won’t be afraid',
-      'Just as long as you stand, stand by me',
+    verses: [
+      {
+        name: 'Verse 1',
+        verseLines: [
+          'When the night has come',
+          'And the land is dark',
+          'And the moon is the only light we’ll see',
+          'No, I won’t be afraid',
+          'Oh, I won’t be afraid',
+        ],
+      },
+      {
+        name: 'Chorus',
+        verseLines: [
+          'So darlin’, darlin’, stand by me',
+          'Oh, stand by me',
+          'Oh, stand, stand by me, stand by me',
+        ],
+      },
     ],
   },
 ]
@@ -40,19 +62,25 @@ const DEMO_PLAYLISTS: Playlist[] = [
   },
 ]
 
-const SONGS_QUERY = `*[_type == "song"] | order(title asc) {
+const SONG_FIELDS = `
   _id,
   title,
+  "verses": coalesce(verses[]{
+    name,
+    "verseLines": coalesce(verseLines, [])
+  }, []),
   "verseLines": coalesce(verseLines, [])
+`
+
+const SONGS_QUERY = `*[_type == "song"] | order(title asc) {
+  ${SONG_FIELDS}
 }`
 
 const PLAYLISTS_QUERY = `*[_type == "playlist"] | order(title asc) {
   _id,
   title,
   "songs": coalesce(songs[]->{
-    _id,
-    title,
-    "verseLines": coalesce(verseLines, [])
+    ${SONG_FIELDS}
   }, [])
 }`
 
