@@ -31,14 +31,21 @@ export default function SongRehearsalView({
 }: SongRehearsalViewProps) {
   // -1 = title screen before revealing line 1; 0..N-1 = active line
   const [lineIndex, setLineIndex] = useState<number>(-1)
+  const [swipeAnimation, setSwipeAnimation] = useState<{
+    tick: number
+    direction: 'next' | 'prev'
+  } | null>(null)
 
   const allLines = useMemo(() => expandSongLines(song), [song])
   const { availableVoices, selectedVoices, filteredLines, toggleVoice } =
     useVoiceFilter(allLines)
 
   const totalLines = filteredLines.length
+  const isAtTitleState = totalLines > 0 && lineIndex === -1
+  const isAtLastLine = totalLines > 0 && lineIndex === totalLines - 1
 
   useEffect(() => {
+    setSwipeAnimation(null)
     setLineIndex(-1)
   }, [song._id])
 
@@ -48,21 +55,40 @@ export default function SongRehearsalView({
 
   const lastStepTimeRef = useRef<number>(0)
 
-  const goNext = useCallback(() => {
-    const now = Date.now()
-    if (now - lastStepTimeRef.current < 80) return
-    lastStepTimeRef.current = now
-    setLineIndex((prev) => (prev < totalLines - 1 ? prev + 1 : prev))
-  }, [totalLines])
+  const stepLine = useCallback(
+    (delta: 1 | -1, fromSwipe = false) => {
+      const now = Date.now()
+      if (now - lastStepTimeRef.current < 80) return
+      lastStepTimeRef.current = now
 
-  const goPrev = useCallback(() => {
-    const now = Date.now()
-    if (now - lastStepTimeRef.current < 80) return
-    lastStepTimeRef.current = now
-    setLineIndex((prev) => (prev > -1 ? prev - 1 : -1))
-  }, [])
+      if (fromSwipe) {
+        setSwipeAnimation((prev) => ({
+          tick: (prev?.tick ?? 0) + 1,
+          direction: delta === 1 ? 'next' : 'prev',
+        }))
+      } else {
+        setSwipeAnimation(null)
+      }
 
-  const swipeHandlers = useSwipeNavigation(goNext, goPrev)
+      setLineIndex((prev) => {
+        const next = prev + delta
+        if (next < -1) return -1
+        if (next > totalLines - 1) return prev
+        return next
+      })
+    },
+    [totalLines]
+  )
+
+  const goNext = useCallback(() => stepLine(1, false), [stepLine])
+  const goPrev = useCallback(() => stepLine(-1, false), [stepLine])
+
+  const { dragX, isDragging, swipeHandlers } = useSwipeNavigation({
+    canGoNext: totalLines > 0 && !isAtLastLine,
+    canGoPrev: lineIndex > -1,
+    onNext: () => stepLine(1, true),
+    onPrev: () => stepLine(-1, true),
+  })
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -78,12 +104,16 @@ export default function SongRehearsalView({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [goNext, goPrev])
 
-  const isAtTitleState = totalLines > 0 && lineIndex === -1
-  const isAtLastLine = totalLines > 0 && lineIndex === totalLines - 1
   const currentLine =
     lineIndex >= 0 && lineIndex < totalLines ? filteredLines[lineIndex] : null
   const progressPercent =
     totalLines > 0 ? Math.max(0, ((lineIndex + 1) / totalLines) * 100) : 0
+  const slideClass =
+  swipeAnimation?.direction === 'next'
+    ? 'animate-slide-in-right'
+      : swipeAnimation?.direction === 'prev'
+    ? 'animate-slide-in-left'
+    : ''
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-amber-50/35 via-stone-100 to-stone-100 dark:from-amber-950/15 dark:via-stone-900 dark:to-stone-900">
@@ -102,7 +132,10 @@ export default function SongRehearsalView({
         </div>
 
         <button
-          onClick={() => setLineIndex(-1)}
+          onClick={() => {
+            setSwipeAnimation(null)
+            setLineIndex(-1)
+          }}
           disabled={lineIndex <= -1}
           title="Start over"
           className={`${backButton} disabled:opacity-30 active:scale-95`}
@@ -120,7 +153,7 @@ export default function SongRehearsalView({
 
       <main
         {...swipeHandlers}
-        className="flex flex-1 touch-pan-y flex-col items-center justify-center px-6 py-8 text-center"
+        className="flex flex-1 touch-pan-y flex-col items-center justify-center overflow-x-hidden px-6 py-8 text-center"
       >
         <div className="mb-4">
           {playlistTitle && (
@@ -141,13 +174,29 @@ export default function SongRehearsalView({
           onToggle={toggleVoice}
         />
 
-        <LyricStageCard
-          hasAnyLines={allLines.length > 0}
-          currentLine={currentLine}
-          isAtTitleState={isAtTitleState}
-          isAtLastLine={isAtLastLine}
-          selectedVoices={selectedVoices}
-        />
+        <div
+          key={swipeAnimation?.tick ?? 0}
+          className={`w-full max-w-xl ${!isDragging ? slideClass : ''}`}
+          style={{
+            transform: dragX
+              ? `translateX(${dragX}px) rotate(${dragX * 0.015}deg)`
+              : undefined,
+            opacity: dragX
+              ? Math.max(0.35, 1 - Math.abs(dragX) / 300)
+              : undefined,
+            transition: isDragging
+              ? 'none'
+              : 'transform 200ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease',
+          }}
+        >
+          <LyricStageCard
+            hasAnyLines={allLines.length > 0}
+            currentLine={currentLine}
+            isAtTitleState={isAtTitleState}
+            isAtLastLine={isAtLastLine}
+            selectedVoices={selectedVoices}
+          />
+        </div>
 
         {isAtLastLine && nextSong && (
           <Link
