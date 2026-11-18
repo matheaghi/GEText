@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, ChevronRight, ListMusic } from 'lucide-react'
+import { ArrowLeft, ListMusic } from 'lucide-react'
 import { formatSongSummary, type Playlist } from '@/sanity/lib/queries'
+import ListRowCard from './ListRowCard'
 import {
   accentText,
   backButton,
-  card,
   emptyBox,
   HeaderActions,
   heading,
@@ -55,26 +55,14 @@ export default function PlaylistDetailView({
       ) : (
         <div className="space-y-2.5">
           {playlistSongs.map((song, idx) => (
-            <Link
+              <ListRowCard
               key={`${song._id}-${idx}`}
               href={`/playlists/${encodeURIComponent(playlist.slug)}/${encodeURIComponent(song.slug)}`}
-              className={`flex w-full items-center justify-between rounded-2xl p-4 text-left transition active:scale-[0.99] ${card}`}
-            >
-              <div className="flex items-center gap-3.5">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/10 text-xs font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                  {idx + 1}
-                </span>
-                <div>
-                  <h2 className="font-semibold text-stone-800 dark:text-stone-100">
-                    {song.title}
-                  </h2>
-                  <p className={`text-xs ${muted}`}>
-                    {formatSongSummary(song)}
-                  </p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-stone-400 dark:text-stone-500" />
-            </Link>
+              title = { song.title }
+              subtitle = { formatSongSummary(song) }
+              leading = { idx + 1}
+          variant="badge"
+            />
           ))}
         </div>
       )}
