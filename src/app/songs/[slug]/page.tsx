@@ -10,7 +10,7 @@ export default async function SongPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const { song, voiceTypes } = await getSongBySlug(decodeURIComponent(slug))
+  const song = await getSongBySlug(decodeURIComponent(slug))
 
   if (!song) {
     notFound()
@@ -19,7 +19,6 @@ export default async function SongPage({
   return (
     <SongRehearsalView
       song={song}
-      voiceTypes={voiceTypes}
       backHref="/"
       backLabel="Songs"
     />

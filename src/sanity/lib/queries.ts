@@ -1,6 +1,6 @@
 import { CHOIR_VOICE_TYPE_NAME } from '../constants'
 import { client } from './client'
-import { DEMO_PLAYLISTS, DEMO_SONGS, DEMO_VOICE_TYPES } from './demoData'
+import { DEMO_PLAYLISTS, DEMO_SONGS } from './demoData'
 
 export type VerseLineInput =
   | string
@@ -108,86 +108,64 @@ export function expandSongLines(song: Song): RehearsalLine[] {
   title,
   "songs": coalesce(songs[]->{ ${SONG_FIELDS} }, [])
 }`
-    const PLAYLIST_BY_SLUG_QUERY = `*[_type == "playlist" && (slug.current == $slug || _id == $slug)][0] {
+const PLAYLIST_BY_SLUG_QUERY = `*[_type == "playlist" && (slug.current == $slug || _id == $slug)][0] {
   _id,
   "slug": coalesce(slug.current, _id),
   title,
   "songs": coalesce(songs[]->{ ${SONG_FIELDS} }, [])
 }`
-    const VOICE_TYPES_QUERY = `*[_type == "voiceType"] | order(name asc).name`
 
-    async function withSanityFallback<T>(
-      queryFn: (sanity: NonNullable<typeof client>) => Promise<T>,
-      fallback: T
-    ): Promise<T> {
-      if (!client) return fallback
-      try {
-        return await queryFn(client)
-      } catch (error) {
-        console.error('Error fetching from Sanity:', error)
-        return fallback
+async function withSanityFallback<T>(
+  queryFn: (sanity: NonNullable<typeof client>) => Promise<T>,
+  fallback: T
+): Promise<T> {
+  if (!client) return fallback
+  try {
+    return await queryFn(client)
+  } catch (error) {
+    console.error('Error fetching from Sanity:', error)
+    return fallback
+  }
+}
+
+export async function getHomeData(): Promise<{
+  songs: Song[]
+  playlists: Playlist[]
+  isConfigured: boolean
+}> {
+  return withSanityFallback<{
+    songs: Song[]
+    playlists: Playlist[]
+    isConfigured: boolean
+  }>(
+    async (sanity) => {
+      const [songs, playlists] = await Promise.all([
+        sanity.fetch<Song[]>(SONGS_QUERY),
+        sanity.fetch<Playlist[]>(PLAYLISTS_QUERY),
+      ])
+      return {
+        songs: songs || [],
+        playlists: playlists || [],
+        isConfigured: true,
       }
-    }
-
-    export async function getHomeData(): Promise<{
-      songs: Song[]
-      playlists: Playlist[]
-      isConfigured: boolean
-    }> {
-      return withSanityFallback<{
-        songs: Song[]
-        playlists: Playlist[]
-        isConfigured: boolean
-      }>(
-        async (sanity) => {
-          const [songs, playlists] = await Promise.all([
-            sanity.fetch<Song[]>(SONGS_QUERY),
-            sanity.fetch<Playlist[]>(PLAYLISTS_QUERY),
-          ])
-          return {
-            songs: songs || [],
-            playlists: playlists || [],
-            isConfigured: true,
-          }
-        },
-        { songs: DEMO_SONGS, playlists: DEMO_PLAYLISTS, isConfigured: false }
-      )
-    }
-
-    export async function getSongBySlug(slug: string): Promise<{
-      song: Song | null
-      voiceTypes: string[]
-    }> {
-          return withSanityFallback(
-            async (sanity) => {
-              const [song, voiceTypes] = await Promise.all([
-                sanity.fetch<Song | null>(SONG_BY_SLUG_QUERY, { slug }),
-                sanity.fetch<string[]>(VOICE_TYPES_QUERY),
-              ])
-              return { song, voiceTypes: voiceTypes || [] }
-            },
-            {
-              song: DEMO_SONGS.find((s) => s.slug === slug) ?? null,
-              voiceTypes: DEMO_VOICE_TYPES,
-            }
+    },
+    { songs: DEMO_SONGS, playlists: DEMO_PLAYLISTS, isConfigured: false }
   )
-      }
+}
 
-      export async function getPlaylistBySlug(slug: string): Promise<{
-        playlist: Playlist | null
-        voiceTypes: string[]
-      }> {
-            return withSanityFallback(
-              async (sanity) => {
-                const [playlist, voiceTypes] = await Promise.all([
-                  sanity.fetch<Playlist | null>(PLAYLIST_BY_SLUG_QUERY, { slug }),
-                  sanity.fetch<string[]>(VOICE_TYPES_QUERY),
-                ])
-                return { playlist, voiceTypes: voiceTypes || [] }
-              },
-              {
-                playlist: DEMO_PLAYLISTS.find((p) => p.slug === slug) ?? null,
-                voiceTypes: DEMO_VOICE_TYPES,
-              }
+export async function getSongBySlug(slug: string): Promise<Song | null> {
+  return withSanityFallback(
+    (sanity) => sanity.fetch<Song | null>(SONG_BY_SLUG_QUERY, { slug }),
+    DEMO_SONGS.find((s) => s.slug === slug) ?? null
   )
-        }
+}
+
+export async function getPlaylistBySlug(
+  slug: string
+): Promise<Playlist | null> {
+  return withSanityFallback(
+    (sanity) =>
+      sanity.fetch<Playlist | null>(PLAYLIST_BY_SLUG_QUERY, { slug }),
+    DEMO_PLAYLISTS.find((p) => p.slug === slug) ?? null
+  )
+}

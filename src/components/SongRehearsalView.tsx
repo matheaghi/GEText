@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, RotateCcw } from 'lucide-react'
 import { expandSongLines, type Song } from '@/sanity/lib/queries'
@@ -13,7 +13,6 @@ import { useVoiceFilter } from './rehearsal/useVoiceFilter'
 
 interface SongRehearsalViewProps {
   song: Song
-  voiceTypes: string[]
   backHref: string
   backLabel: string
   playlistTitle?: string
@@ -25,7 +24,6 @@ interface SongRehearsalViewProps {
 
 export default function SongRehearsalView({
   song,
-  voiceTypes,
   backHref,
   backLabel,
   playlistTitle,
@@ -36,7 +34,7 @@ export default function SongRehearsalView({
 
   const allLines = useMemo(() => expandSongLines(song), [song])
   const { availableVoices, selectedVoices, filteredLines, toggleVoice } =
-    useVoiceFilter(voiceTypes, allLines)
+    useVoiceFilter(allLines)
 
   const totalLines = filteredLines.length
 
@@ -48,11 +46,19 @@ export default function SongRehearsalView({
     setLineIndex((prev) => (prev >= totalLines ? totalLines - 1 : prev))
   }, [totalLines])
 
+  const lastStepTimeRef = useRef<number>(0)
+
   const goNext = useCallback(() => {
+    const now = Date.now()
+    if (now - lastStepTimeRef.current < 80) return
+    lastStepTimeRef.current = now
     setLineIndex((prev) => (prev < totalLines - 1 ? prev + 1 : prev))
   }, [totalLines])
 
   const goPrev = useCallback(() => {
+    const now = Date.now()
+    if (now - lastStepTimeRef.current < 80) return
+    lastStepTimeRef.current = now
     setLineIndex((prev) => (prev > -1 ? prev - 1 : -1))
   }, [])
 

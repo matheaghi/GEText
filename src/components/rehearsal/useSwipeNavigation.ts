@@ -2,16 +2,22 @@
 
 import { useRef, type TouchEvent } from 'react'
 
-const MIN_SWIPE_DISTANCE = 40
+const MIN_SWIPE_DISTANCE = 60
 
 /**
  * Triggers horizontal swipe callbacks (swipe left = next, swipe right = prev)
- * while ignoring vertical scrolls or accidental taps.
+ * while ignoring touches on interactive elements, vertical scrolls, or small taps.
  */
 export function useSwipeNavigation(onNext: () => void, onPrev: () => void) {
   const startRef = useRef<{ x: number; y: number } | null>(null)
 
   const onTouchStart = (e: TouchEvent) => {
+    const target = e.target as HTMLElement | null
+    if (target?.closest('button, a, input, select, textarea')) {
+      startRef.current = null
+      return
+    }
+
     const touch = e.touches[0]
     if (!touch) return
     startRef.current = { x: touch.clientX, y: touch.clientY }
@@ -30,7 +36,7 @@ export function useSwipeNavigation(onNext: () => void, onPrev: () => void) {
 
     if (
       Math.abs(deltaX) < MIN_SWIPE_DISTANCE ||
-      Math.abs(deltaX) <= Math.abs(deltaY) * 1.2
+      Math.abs(deltaX) <= Math.abs(deltaY) * 1.5
     ) {
       return
     }

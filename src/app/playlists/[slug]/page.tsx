@@ -10,7 +10,7 @@ export default async function PlaylistPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const { playlist } = await getPlaylistBySlug(decodeURIComponent(slug))
+  const playlist = await getPlaylistBySlug(decodeURIComponent(slug))
 
   if (!playlist) {
     notFound()

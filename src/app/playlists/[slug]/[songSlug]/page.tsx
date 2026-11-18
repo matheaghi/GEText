@@ -13,8 +13,7 @@ export default async function PlaylistSongPage({
   const decodedPlaylistSlug = decodeURIComponent(slug)
   const decodedSongSlug = decodeURIComponent(songSlug)
 
-  const { playlist, voiceTypes } =
-    await getPlaylistBySlug(decodedPlaylistSlug)
+  const playlist = await getPlaylistBySlug(decodedPlaylistSlug)
 
   if (!playlist) {
     notFound()
@@ -37,7 +36,6 @@ export default async function PlaylistSongPage({
   return (
     <SongRehearsalView
       song={song}
-      voiceTypes={voiceTypes}
       backHref={`/playlists/${encodeURIComponent(playlist.slug)}`}
       backLabel={playlist.title}
       playlistTitle={playlist.title}

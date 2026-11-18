@@ -6,32 +6,35 @@ import type { RehearsalLine } from '@/sanity/lib/queries'
 
 const STORAGE_KEY = 'selectedVoices'
 
-function buildAvailableVoices(
-  voiceTypes: string[],
-  allLines: RehearsalLine[]
-): string[] {
-  const seen = new Set<string>([CHOIR_VOICE_TYPE_NAME.toLowerCase()])
-  const list = [CHOIR_VOICE_TYPE_NAME]
+function buildSongVoices(allLines: RehearsalLine[]): string[] {
+  const seen = new Set<string>()
+  const list: string[] = []
 
-  const add = (voice: string) => {
-    const trimmed = voice.trim()
-    if (!trimmed) return
-    const key = trimmed.toLowerCase()
-    if (!seen.has(key)) {
-      seen.add(key)
-      list.push(trimmed)
+  for (const line of allLines) {
+    for (const voice of line.voiceTypes) {
+      const trimmed = voice.trim()
+      if (!trimmed) continue
+      const key = trimmed.toLowerCase()
+      if (!seen.has(key)) {
+        seen.add(key)
+        list.push(trimmed)
+      }
     }
   }
 
-  voiceTypes.forEach(add)
-  allLines.forEach((line) => line.voiceTypes.forEach(add))
+  // Keep Choir first if present in this song, then preserve order of appearance
+  const choirIdx = list.findIndex(
+    (v) => v.toLowerCase() === CHOIR_VOICE_TYPE_NAME.toLowerCase()
+  )
+  if (choirIdx > 0) {
+    const [choir] = list.splice(choirIdx, 1)
+    list.unshift(choir)
+  }
+
   return list
 }
 
-export function useVoiceFilter(
-  voiceTypes: string[],
-  allLines: RehearsalLine[]
-) {
+export function useVoiceFilter(allLines: RehearsalLine[]) {
   const [selectedVoices, setSelectedVoices] = useState<string[]>([
     CHOIR_VOICE_TYPE_NAME,
   ])
@@ -64,8 +67,8 @@ export function useVoiceFilter(
   }, [])
 
   const availableVoices = useMemo(
-    () => buildAvailableVoices(voiceTypes, allLines),
-    [voiceTypes, allLines]
+    () => buildSongVoices(allLines),
+    [allLines]
   )
 
   const filteredLines = useMemo(() => {
