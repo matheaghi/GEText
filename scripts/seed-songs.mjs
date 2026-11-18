@@ -27,6 +27,19 @@ function loadEnvLocal() {
   }
 }
 
+function slugify(text) {
+  return text
+    .toLowerCase()
+    .replace(/æ/g, 'ae')
+    .replace(/ø/g, 'o')
+    .replace(/å/g, 'a')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 96)
+}
+
 function makeKey(prefix, index) {
   return `${prefix}-${index}`
 }
@@ -81,15 +94,19 @@ function parseSongFile(filePath) {
     throw new Error(`No { ... } verses found in ${filePath}`)
   }
 
-  const slug = path
+  const idSlug = path
     .basename(filePath, path.extname(filePath))
     .toLowerCase()
     .replace(/[^a-z0-9-_]+/g, '-')
 
   return {
-    _id: `song-${slug}`,
+    _id: `song-${idSlug}`,
     _type: 'song',
     title,
+    slug: {
+      _type: 'slug',
+      current: slugify(title) || idSlug,
+    },
     verses,
   }
 }

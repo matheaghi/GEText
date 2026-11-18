@@ -12,6 +12,16 @@ export const songType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: 'slug',
+      title: 'Slug',
+      type: 'slug',
+      options: {
+        source: 'title',
+        maxLength: 96,
+      },
+      validation: (rule) => rule.required(),
+    }),
+    defineField({
       name: 'verses',
       title: 'Verses',
       description: 'Ordered list of verses (each with a name and verse lines).',
