@@ -8,6 +8,7 @@ import { accentText, backButton, muted } from './ui'
 import LyricStageCard from './rehearsal/LyricStageCard'
 import RehearsalControls from './rehearsal/RehearsalControls'
 import VoiceFilterPills from './rehearsal/VoiceFilterPills'
+import { useSwipeNavigation } from './rehearsal/useSwipeNavigation'
 import { useVoiceFilter } from './rehearsal/useVoiceFilter'
 
 interface SongRehearsalViewProps {
@@ -54,6 +55,8 @@ export default function SongRehearsalView({
   const goPrev = useCallback(() => {
     setLineIndex((prev) => (prev > -1 ? prev - 1 : -1))
   }, [])
+
+  const swipeHandlers = useSwipeNavigation(goNext, goPrev)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -109,7 +112,10 @@ export default function SongRehearsalView({
         />
       </div>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-6 py-8 text-center">
+      <main
+        {...swipeHandlers}
+        className="flex flex-1 touch-pan-y flex-col items-center justify-center px-6 py-8 text-center"
+      >
         <div className="mb-4">
           {playlistTitle && (
             <p
