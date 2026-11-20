@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ListMusic, Music, Search } from 'lucide-react'
 import {
   formatSongSummary,
@@ -10,6 +10,7 @@ import {
 import DemoModeBanner from './DemoModeBanner'
 import HeaderActions from './HeaderActions'
 import ListRowCard from './ListRowCard'
+import ScrollToTopButton from './ScrollToTopButton'
 import SongSearchInput from './SongSearchInput'
 import { emptyBox, heading, muted } from './styles'
 
@@ -26,6 +27,7 @@ export default function HomeListView({
 }: HomeListViewProps) {
   const [activeTab, setActiveTab] = useState<'songs' | 'playlists'>('songs')
   const [searchQuery, setSearchQuery] = useState('')
+  const searchContainerRef = useRef<HTMLDivElement>(null)
 
   const filteredSongs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
@@ -83,7 +85,10 @@ export default function HomeListView({
           </div>
         ) : (
           <>
-            <SongSearchInput value={searchQuery} onChange={setSearchQuery} />
+            <ScrollToTopButton targetRef={searchContainerRef} />
+            <div ref={searchContainerRef}>
+              <SongSearchInput value={searchQuery} onChange={setSearchQuery} />
+            </div>
             {filteredSongs.length === 0 ? (
               <div className={emptyBox}>
                 <Search className="mx-auto mb-3 h-7 w-7 text-stone-400 dark:text-stone-500" />
