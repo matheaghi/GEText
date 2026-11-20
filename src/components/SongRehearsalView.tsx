@@ -51,8 +51,13 @@ export default function SongRehearsalView({
   }, [song])
 
   const allLines = useMemo(() => expandSongLines(activeSong), [activeSong])
-  const { availableVoices, selectedVoices, filteredLines, toggleVoice } =
-    useVoiceFilter(allLines)
+  const {
+    hasChoir,
+    availableVoices,
+    selectedVoices,
+    filteredLines,
+    toggleVoice,
+  } = useVoiceFilter(allLines)
 
   const totalLines = filteredLines.length
   const isAtTitleState = totalLines > 0 && lineIndex === -1
@@ -207,6 +212,7 @@ export default function SongRehearsalView({
         </div>
 
         <VoiceFilterPills
+          hasChoir={hasChoir}
           availableVoices={availableVoices}
           selectedVoices={selectedVoices}
           onToggle={toggleVoice}
