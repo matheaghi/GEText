@@ -1,20 +1,27 @@
 import { defineField, defineType } from 'sanity'
+import { LyricsImportInput } from '../components/LyricsImportInput'
 
 export const songType = defineType({
   name: 'song',
   title: 'Song',
   type: 'document',
+  groups: [
+    { name: 'song', title: 'Song', default: true },
+    { name: 'import', title: 'Import Lyrics' },
+  ],
   fields: [
     defineField({
       name: 'title',
       title: 'Title',
       type: 'string',
+      group: 'song',
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
+      group: 'song',
       options: {
         source: (doc) => {
           const title = typeof doc.title === 'string' ? doc.title.trim() : ''
@@ -51,6 +58,7 @@ export const songType = defineType({
       description:
         'If this song is a version of another song, select the original song here.',
       type: 'reference',
+      group: 'song',
       to: [{ type: 'song' }],
       options: {
         filter: ({ document }) => {
@@ -70,6 +78,7 @@ export const songType = defineType({
       title: 'Version Name',
       description: 'e.g. Acoustic, Choir version, Short edit',
       type: 'string',
+      group: 'song',
       hidden: ({ document }) => !document?.original,
       validation: (rule) =>
         rule.custom((value, context) => {
@@ -84,13 +93,24 @@ export const songType = defineType({
       title: 'Verses',
       description: 'Ordered list of verses (each with a name and verse lines).',
       type: 'array',
+      group: 'song',
       of: [{ type: 'verse' }],
+    }),
+    defineField({
+      name: 'lyricsImport',
+      title: 'Import Lyrics',
+      type: 'string',
+      group: 'import',
+      components: {
+        input: LyricsImportInput,
+      },
     }),
     defineField({
       name: 'verseLines',
       title: 'Legacy Verse Lines',
       description: 'Deprecated: use Verses above instead.',
       type: 'array',
+      group: 'song',
       of: [{ type: 'string' }],
       hidden: ({ value }) => !Array.isArray(value) || value.length === 0,
     }),
