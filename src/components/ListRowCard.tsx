@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
-import { accentText, card, muted } from './ui'
+import { accentText, card, muted } from './styles'
 
 interface ListRowCardProps {
   href: string

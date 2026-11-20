@@ -1,37 +1,22 @@
 'use client'
 
-import { useState } from 'react'
-import { ListMusic, Music, Sparkles } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ListMusic, Music, Search } from 'lucide-react'
 import {
   formatSongSummary,
   type Playlist,
   type Song,
 } from '@/sanity/lib/queries'
+import DemoModeBanner from './DemoModeBanner'
+import HeaderActions from './HeaderActions'
 import ListRowCard from './ListRowCard'
-import { emptyBox, HeaderActions, heading, muted } from './ui'
+import SongSearchInput from './SongSearchInput'
+import { emptyBox, heading, muted } from './styles'
 
 interface HomeListViewProps {
   songs: Song[]
   playlists: Playlist[]
   isConfigured: boolean
-}
-
-function DemoModeBanner() {
-  return (
-    <div className="mb-5 rounded-2xl border border-amber-500/30 bg-amber-50/80 p-4 text-xs text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-200">
-      <div className="mb-1 flex items-center gap-1.5 font-semibold text-amber-900 dark:text-amber-300">
-        <Sparkles className="h-4 w-4" />
-        <span>Demo Mode (Sanity Project ID not set yet)</span>
-      </div>
-      <p className="text-amber-800/90 dark:text-amber-200/80">
-        Showing sample songs below so you can test the rehearsal controls right away. Add{' '}
-        <code className="rounded bg-black/10 px-1 py-0.5 dark:bg-black/30">
-          NEXT_PUBLIC_SANITY_PROJECT_ID
-        </code>{' '}
-        to connect your live Sanity backend.
-      </p>
-    </div>
-  )
 }
 
 export default function HomeListView({
@@ -40,11 +25,19 @@ export default function HomeListView({
   isConfigured,
 }: HomeListViewProps) {
   const [activeTab, setActiveTab] = useState<'songs' | 'playlists'>('songs')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredSongs = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return songs
+    return songs.filter((song) => song.title.toLowerCase().includes(q))
+  }, [songs, searchQuery])
 
   const tabClass = (active: boolean) =>
-    `flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${active
-      ? 'bg-stone-50 text-amber-800 shadow-sm dark:bg-stone-800 dark:text-amber-300'
-      : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
+    `flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold transition ${
+      active
+        ? 'bg-stone-50 text-amber-800 shadow-sm dark:bg-stone-800 dark:text-amber-300'
+        : 'text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200'
     }`
 
   return (
@@ -89,38 +82,58 @@ export default function HomeListView({
             </p>
           </div>
         ) : (
-          <div className="space-y-2.5">
-            {songs.map((song) => (
-                <ListRowCard
-                key={song._id}
-                href={`/songs/${encodeURIComponent(song.slug)}`}
-                title = { song.title }
-                subtitle = { formatSongSummary(song) }
-                leading = {< Music className = "h-5 w-5" />}
-              />
-            ))}
-          </div>
+          <>
+            <SongSearchInput value={searchQuery} onChange={setSearchQuery} />
+            {filteredSongs.length === 0 ? (
+              <div className={emptyBox}>
+                <Search className="mx-auto mb-3 h-7 w-7 text-stone-400 dark:text-stone-500" />
+                <p className="text-sm font-medium text-stone-600 dark:text-stone-300">
+                  No songs match &ldquo;{searchQuery.trim()}&rdquo;
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="mt-3 text-xs font-semibold text-amber-700 hover:underline dark:text-amber-300"
+                >
+                  Clear search
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {filteredSongs.map((song) => (
+                  <ListRowCard
+                    key={song._id}
+                    href={`/songs/${encodeURIComponent(song.slug)}`}
+                    title={song.title}
+                    subtitle={formatSongSummary(song)}
+                    leading={<Music className="h-5 w-5" />}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         )
-        ): playlists.length === 0 ? (
-      <div className={emptyBox}>
-        <ListMusic className="mx-auto mb-3 h-8 w-8 text-stone-400 dark:text-stone-500" />
-        <p className="text-sm font-medium text-stone-600 dark:text-stone-300">
-          No playlists yet
-        </p>
-      </div>
+      ) : playlists.length === 0 ? (
+        <div className={emptyBox}>
+          <ListMusic className="mx-auto mb-3 h-8 w-8 text-stone-400 dark:text-stone-500" />
+          <p className="text-sm font-medium text-stone-600 dark:text-stone-300">
+            No playlists yet
+          </p>
+        </div>
       ) : (
-      <div className="space-y-2.5">
-        {playlists.map((playlist) => (
+        <div className="space-y-2.5">
+          {playlists.map((playlist) => (
             <ListRowCard
               key={playlist._id}
-            href={`/playlists/${encodeURIComponent(playlist.slug)}`}
-              title = { playlist.title }
-              subtitle = {`${playlist.songs?.length || 0} ${playlist.songs?.length === 1 ? 'song' : 'songs'
-            }`}
-        leading={<ListMusic className="h-5 w-5" />}
+              href={`/playlists/${encodeURIComponent(playlist.slug)}`}
+              title={playlist.title}
+              subtitle={`${playlist.songs?.length || 0} ${
+                playlist.songs?.length === 1 ? 'song' : 'songs'
+              }`}
+              leading={<ListMusic className="h-5 w-5" />}
             />
           ))}
-      </div>
+        </div>
       )}
     </div>
   )

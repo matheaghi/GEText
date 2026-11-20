@@ -3,15 +3,9 @@
 import Link from 'next/link'
 import { ArrowLeft, ListMusic } from 'lucide-react'
 import { formatSongSummary, type Playlist } from '@/sanity/lib/queries'
+import HeaderActions from './HeaderActions'
 import ListRowCard from './ListRowCard'
-import {
-  accentText,
-  backButton,
-  emptyBox,
-  HeaderActions,
-  heading,
-  muted,
-} from './ui'
+import { accentText, backButton, emptyBox, heading, muted } from './styles'
 
 interface PlaylistDetailViewProps {
   playlist: Playlist

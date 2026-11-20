@@ -1,6 +1,6 @@
 import { CHOIR_VOICE_TYPE_NAME } from '@/sanity/constants'
 import type { RehearsalLine } from '@/sanity/lib/queries'
-import { accentText, heading, muted } from '../ui'
+import { accentText, heading, muted } from '../styles'
 
 interface LyricStageCardProps {
   hasAnyLines: boolean
