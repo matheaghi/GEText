@@ -2,7 +2,11 @@
 
 import Link from 'next/link'
 import { ArrowLeft, ListMusic } from 'lucide-react'
-import { formatSongSummary, type Playlist } from '@/sanity/lib/queries'
+import {
+  encodeSlugPath,
+  formatSongSummary,
+  type Playlist,
+} from '@/sanity/lib/queries'
 import HeaderActions from './HeaderActions'
 import ListRowCard from './ListRowCard'
 import { accentText, backButton, emptyBox, heading, muted } from './styles'
@@ -51,7 +55,7 @@ export default function PlaylistDetailView({
           {playlistSongs.map((song, idx) => (
               <ListRowCard
               key={`${song._id}-${idx}`}
-              href={`/playlists/${encodeURIComponent(playlist.slug)}/${encodeURIComponent(song.slug)}`}
+              href={`/playlists/${encodeURIComponent(playlist.slug)}/${encodeSlugPath(song.slug)}`}
               title = { song.title }
               subtitle = { formatSongSummary(song) }
               leading = { idx + 1}

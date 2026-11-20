@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { ListMusic, Music, Search } from 'lucide-react'
 import {
+  encodeSlugPath,
   formatSongSummary,
   type Playlist,
   type Song,
@@ -32,7 +33,11 @@ export default function HomeListView({
   const filteredSongs = useMemo(() => {
     const q = searchQuery.trim().toLowerCase()
     if (!q) return songs
-    return songs.filter((song) => song.title.toLowerCase().includes(q))
+    return songs.filter(
+      (song) =>
+        song.title.toLowerCase().includes(q) ||
+        (song.versionName?.toLowerCase().includes(q) ?? false)
+    )
   }, [songs, searchQuery])
 
   const tabClass = (active: boolean) =>
@@ -108,7 +113,7 @@ export default function HomeListView({
                 {filteredSongs.map((song) => (
                   <ListRowCard
                     key={song._id}
-                    href={`/songs/${encodeURIComponent(song.slug)}`}
+                    href={`/songs/${encodeSlugPath(song.slug)}`}
                     title={song.title}
                     subtitle={formatSongSummary(song)}
                     leading={<Music className="h-5 w-5" />}

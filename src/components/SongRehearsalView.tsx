@@ -166,6 +166,11 @@ export default function SongRehearsalView({
           <h1 className="text-xl font-bold tracking-tight text-stone-700 sm:text-2xl dark:text-stone-200">
             {song.title}
           </h1>
+          {song.versionName?.trim() && (
+            <p className={`mt-1 text-xs font-medium ${accentText}`}>
+              {song.versionName.trim()}
+            </p>
+          )}
         </div>
 
         <VoiceFilterPills

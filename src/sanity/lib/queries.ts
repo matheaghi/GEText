@@ -19,6 +19,7 @@ export interface Song {
   _id: string
   slug: string
   title: string
+  versionName?: string | null
   verses?: Verse[]
   verseLines?: string[]
 }
@@ -76,19 +77,28 @@ export function expandSongLines(song: Song): RehearsalLine[] {
       return expanded
     }
 
-    export function formatSongSummary(song: Song): string {
+    export function encodeSlugPath(slug: string): string {
+  return slug.split('/').map(encodeURIComponent).join('/')
+}
+
+export function formatSongSummary(song: Song): string {
       const lineCount = expandSongLines(song).length
       const verseCount = song.verses?.length ?? 0
       const linesLabel = `${lineCount} ${lineCount === 1 ? 'line' : 'lines'}`
-      return verseCount > 0
-        ? `${verseCount} ${verseCount === 1 ? 'verse' : 'verses'} · ${linesLabel}`
-        : linesLabel
+      const base =
+        verseCount > 0
+          ? `${verseCount} ${verseCount === 1 ? 'verse' : 'verses'} · ${linesLabel}`
+          : linesLabel
+      return song.versionName?.trim()
+        ? `${song.versionName.trim()} · ${base}`
+        : base
     }
 
     const SONG_FIELDS = `
   _id,
   "slug": coalesce(slug.current, _id),
   title,
+  versionName,
   "verses": coalesce(verses[]{
     name,
     "voiceTypes": coalesce(voiceTypes[]->name, []),

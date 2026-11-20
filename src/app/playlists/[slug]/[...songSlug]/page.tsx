@@ -1,17 +1,17 @@
 import { notFound } from 'next/navigation'
 import SongRehearsalView from '@/components/SongRehearsalView'
-import { getPlaylistBySlug } from '@/sanity/lib/queries'
+import { encodeSlugPath, getPlaylistBySlug } from '@/sanity/lib/queries'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PlaylistSongPage({
   params,
 }: {
-  params: Promise<{ slug: string; songSlug: string }>
+  params: Promise<{ slug: string; songSlug: string[] }>
 }) {
   const { slug, songSlug } = await params
   const decodedPlaylistSlug = decodeURIComponent(slug)
-  const decodedSongSlug = decodeURIComponent(songSlug)
+  const decodedSongSlug = songSlug.map(decodeURIComponent).join('/')
 
   const playlist = await getPlaylistBySlug(decodedPlaylistSlug)
 
@@ -43,7 +43,7 @@ export default async function PlaylistSongPage({
         next
           ? {
               title: next.title,
-              href: `/playlists/${encodeURIComponent(playlist.slug)}/${encodeURIComponent(next.slug)}`,
+              href: `/playlists/${encodeURIComponent(playlist.slug)}/${encodeSlugPath(next.slug)}`,
             }
           : null
       }

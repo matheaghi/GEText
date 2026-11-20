@@ -7,20 +7,15 @@ export const dynamic = 'force-dynamic'
 export default async function SongPage({
   params,
 }: {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string[] }>
 }) {
   const { slug } = await params
-  const song = await getSongBySlug(decodeURIComponent(slug))
+  const songSlug = slug.map(decodeURIComponent).join('/')
+  const song = await getSongBySlug(songSlug)
 
   if (!song) {
     notFound()
   }
 
-  return (
-    <SongRehearsalView
-      song={song}
-      backHref="/"
-      backLabel="Songs"
-    />
-  )
+  return <SongRehearsalView song={song} backHref="/" backLabel="Songs" />
 }
