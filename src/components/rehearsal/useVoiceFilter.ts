@@ -5,9 +5,10 @@ import { CHOIR_VOICE_TYPE_NAME } from '@/sanity/constants'
 import type { RehearsalLine } from '@/sanity/lib/queries'
 
 const STORAGE_KEY = 'selectedVoices'
+const CHOIR_KEY = CHOIR_VOICE_TYPE_NAME.toLowerCase()
 
 function buildSongVoices(allLines: RehearsalLine[]): string[] {
-  const seen = new Set<string>()
+  const seen = new Set<string>([CHOIR_KEY])
   const list: string[] = []
 
   for (const line of allLines) {
@@ -22,22 +23,11 @@ function buildSongVoices(allLines: RehearsalLine[]): string[] {
     }
   }
 
-  // Keep Choir first if present in this song, then preserve order of appearance
-  const choirIdx = list.findIndex(
-    (v) => v.toLowerCase() === CHOIR_VOICE_TYPE_NAME.toLowerCase()
-  )
-  if (choirIdx > 0) {
-    const [choir] = list.splice(choirIdx, 1)
-    list.unshift(choir)
-  }
-
   return list
 }
 
 export function useVoiceFilter(allLines: RehearsalLine[]) {
-  const [selectedVoices, setSelectedVoices] = useState<string[]>([
-    CHOIR_VOICE_TYPE_NAME,
-  ])
+  const [selectedVoices, setSelectedVoices] = useState<string[]>([])
 
   useEffect(() => {
     try {
@@ -46,7 +36,10 @@ export function useVoiceFilter(allLines: RehearsalLine[]) {
       const parsed = JSON.parse(raw)
       if (Array.isArray(parsed)) {
         setSelectedVoices(
-          parsed.filter((v): v is string => typeof v === 'string')
+          parsed.filter(
+            (v): v is string =>
+              typeof v === 'string' && v.trim().toLowerCase() !== CHOIR_KEY
+          )
         )
       }
     } catch {}
@@ -73,12 +66,23 @@ export function useVoiceFilter(allLines: RehearsalLine[]) {
 
   const filteredLines = useMemo(() => {
     const selectedSet = new Set(selectedVoices.map((v) => v.toLowerCase()))
+    selectedSet.add(CHOIR_KEY)
+
     return allLines.filter((line) =>
       line.voiceTypes.some((v) => selectedSet.has(v.toLowerCase()))
     )
   }, [allLines, selectedVoices])
 
+  const hasChoir = useMemo(
+    () =>
+      allLines.some((line) =>
+        line.voiceTypes.some((v) => v.trim().toLowerCase() === CHOIR_KEY)
+      ),
+    [allLines]
+  )
+
   return {
+    hasChoir,
     availableVoices,
     selectedVoices,
     filteredLines,
