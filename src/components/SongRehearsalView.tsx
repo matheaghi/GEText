@@ -3,16 +3,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, RotateCcw } from 'lucide-react'
-import { expandSongLines, type Song } from '@/sanity/lib/queries'
+import {
+  expandSongLines,
+  type Song,
+  type SongVersionOption,
+} from '@/sanity/lib/queries'
 import { accentText, backButton, muted } from './styles'
 import LyricStageCard from './rehearsal/LyricStageCard'
 import RehearsalControls from './rehearsal/RehearsalControls'
+import VersionSelector from './rehearsal/VersionSelector'
 import VoiceFilterPills from './rehearsal/VoiceFilterPills'
 import { useSwipeNavigation } from './rehearsal/useSwipeNavigation'
 import { useVoiceFilter } from './rehearsal/useVoiceFilter'
 
 interface SongRehearsalViewProps {
   song: Song
+  versions?: SongVersionOption[]
+  versionBasePath?: string
   backHref: string
   backLabel: string
   playlistTitle?: string
@@ -24,6 +31,8 @@ interface SongRehearsalViewProps {
 
 export default function SongRehearsalView({
   song,
+  versions = [],
+  versionBasePath = '/songs',
   backHref,
   backLabel,
   playlistTitle,
@@ -109,11 +118,11 @@ export default function SongRehearsalView({
   const progressPercent =
     totalLines > 0 ? Math.max(0, ((lineIndex + 1) / totalLines) * 100) : 0
   const slideClass =
-  swipeAnimation?.direction === 'next'
-    ? 'animate-slide-in-right'
+    swipeAnimation?.direction === 'next'
+      ? 'animate-slide-in-right'
       : swipeAnimation?.direction === 'prev'
-    ? 'animate-slide-in-left'
-    : ''
+        ? 'animate-slide-in-left'
+        : ''
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-amber-50/35 via-stone-100 to-stone-100 dark:from-amber-950/15 dark:via-stone-900 dark:to-stone-900">
@@ -151,6 +160,16 @@ export default function SongRehearsalView({
         />
       </div>
 
+      {versions.length > 1 && (
+        <div className="flex justify-end px-4 pt-3">
+          <VersionSelector
+            versions={versions}
+            currentSongId={song._id}
+            basePath={versionBasePath}
+          />
+        </div>
+      )}
+
       <main
         {...swipeHandlers}
         className="flex flex-1 touch-pan-y flex-col items-center justify-center overflow-x-hidden px-6 py-8 text-center"
@@ -166,7 +185,7 @@ export default function SongRehearsalView({
           <h1 className="text-xl font-bold tracking-tight text-stone-700 sm:text-2xl dark:text-stone-200">
             {song.title}
           </h1>
-          {song.versionName?.trim() && (
+          {song.versionName?.trim() && versions.length <= 1 && (
             <p className={`mt-1 text-xs font-medium ${accentText}`}>
               {song.versionName.trim()}
             </p>

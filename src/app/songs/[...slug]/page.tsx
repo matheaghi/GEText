@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import SongRehearsalView from '@/components/SongRehearsalView'
-import { getSongBySlug } from '@/sanity/lib/queries'
+import { getSongBySlug, getSongVersions } from '@/sanity/lib/queries'
 
 export const dynamic = 'force-dynamic'
 
@@ -17,5 +17,15 @@ export default async function SongPage({
     notFound()
   }
 
-  return <SongRehearsalView song={song} backHref="/" backLabel="Songs" />
+  const versions = await getSongVersions(song)
+
+  return (
+    <SongRehearsalView
+      song={song}
+      versions={versions}
+      versionBasePath="/songs"
+      backHref="/"
+      backLabel="Songs"
+    />
+  )
 }

@@ -19,9 +19,17 @@ export interface Song {
   _id: string
   slug: string
   title: string
+  originalId?: string | null
   versionName?: string | null
   verses?: Verse[]
   verseLines?: string[]
+}
+
+export interface SongVersionOption {
+  _id: string
+  slug: string
+  label: string
+  isOriginal: boolean
 }
 
 export interface Playlist {
@@ -98,6 +106,7 @@ export function formatSongSummary(song: Song): string {
   _id,
   "slug": coalesce(slug.current, _id),
   title,
+  "originalId": original._ref,
   versionName,
   "verses": coalesce(verses[]{
     name,
@@ -110,7 +119,14 @@ export function formatSongSummary(song: Song): string {
   "verseLines": coalesce(verseLines, [])
 `
 
-    const SONGS_QUERY = `*[_type == "song"] | order(title asc) { ${SONG_FIELDS} }`
+    const SONGS_QUERY = `*[_type == "song" && !defined(original)] | order(title asc) { ${SONG_FIELDS} }`
+    const SONG_VERSIONS_QUERY = `*[_type == "song" && (_id == $rootId || original._ref == $rootId)] | order(defined(original) asc, versionName asc, title asc) {
+  _id,
+  "slug": coalesce(slug.current, _id),
+  title,
+  versionName,
+  "isOriginal": !defined(original)
+}`
     const SONG_BY_SLUG_QUERY = `*[_type == "song" && (slug.current == $slug || _id == $slug)][0] { ${SONG_FIELDS} }`
     const PLAYLISTS_QUERY = `*[_type == "playlist"] | order(title asc) {
   _id,
@@ -150,8 +166,8 @@ export async function getHomeData(): Promise<{
   }>(
     async (sanity) => {
       const [songs, playlists] = await Promise.all([
-        sanity.fetch<Song[]>(SONGS_QUERY),
-        sanity.fetch<Playlist[]>(PLAYLISTS_QUERY),
+        sanity.fetch<Song[]>(SONGS_QUERY, {}, { cache: 'no-store' }),
+        sanity.fetch<Playlist[]>(PLAYLISTS_QUERY, {}, { cache: 'no-store' }),
       ])
       return {
         songs: songs || [],
@@ -165,9 +181,44 @@ export async function getHomeData(): Promise<{
 
 export async function getSongBySlug(slug: string): Promise<Song | null> {
   return withSanityFallback(
-    (sanity) => sanity.fetch<Song | null>(SONG_BY_SLUG_QUERY, { slug }),
+    (sanity) =>
+      sanity.fetch<Song | null>(
+        SONG_BY_SLUG_QUERY,
+        { slug },
+        { cache: 'no-store' }
+      ),
     DEMO_SONGS.find((s) => s.slug === slug) ?? null
   )
+}
+
+export async function getSongVersions(
+  song: Song
+): Promise<SongVersionOption[]> {
+  const rootId = (song.originalId || song._id).replace(/^drafts\./, '')
+  return withSanityFallback(async (sanity) => {
+    const rows = await sanity.fetch<
+      Array<{
+        _id: string
+        slug: string
+        title: string
+        versionName?: string | null
+        isOriginal: boolean
+      }>
+    >(SONG_VERSIONS_QUERY, { rootId }, { cache: 'no-store' })
+
+    const mapped = (rows || []).map((row) => ({
+      _id: row._id,
+      slug: row.slug,
+      isOriginal: row.isOriginal,
+      label: row.isOriginal
+        ? 'Original'
+        : row.versionName?.trim() || row.title,
+    }))
+
+    // Keep Original first
+    mapped.sort((a, b) => Number(b.isOriginal) - Number(a.isOriginal))
+    return mapped
+  }, [])
 }
 
 export async function getPlaylistBySlug(
@@ -175,7 +226,11 @@ export async function getPlaylistBySlug(
 ): Promise<Playlist | null> {
   return withSanityFallback(
     (sanity) =>
-      sanity.fetch<Playlist | null>(PLAYLIST_BY_SLUG_QUERY, { slug }),
+      sanity.fetch<Playlist | null>(
+        PLAYLIST_BY_SLUG_QUERY,
+        { slug },
+        { cache: 'no-store' }
+      ),
     DEMO_PLAYLISTS.find((p) => p.slug === slug) ?? null
   )
 }
