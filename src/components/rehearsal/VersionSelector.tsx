@@ -1,10 +1,14 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { ChevronDown } from 'lucide-react'
-import { encodeSlugPath, type SongVersionOption } from '@/sanity/lib/queries'
+import type { Song } from '@/sanity/lib/queries'
 
 const MAX_LABEL_LENGTH = 12
+
+function getVersionLabel(song: Song): string {
+  if (!song.originalId) return 'Original'
+  return song.versionName?.trim() || song.title
+}
 
 function truncateLabel(label: string): string {
   return label.length > MAX_LABEL_LENGTH
@@ -13,22 +17,20 @@ function truncateLabel(label: string): string {
 }
 
 interface VersionSelectorProps {
-  versions: SongVersionOption[]
+  versions: Song[]
   currentSongId: string
-  basePath: string
+  onSelect: (song: Song) => void
 }
 
 export default function VersionSelector({
   versions,
   currentSongId,
-  basePath,
+  onSelect,
 }: VersionSelectorProps) {
-  const router = useRouter()
-
   if (versions.length <= 1) return null
 
   const normalizedCurrentId = currentSongId.replace(/^drafts\./, '')
-  const currentOption = versions.find(
+  const currentSong = versions.find(
     (v) => v._id.replace(/^drafts\./, '') === normalizedCurrentId
   )
 
@@ -36,14 +38,14 @@ export default function VersionSelector({
     <div className="relative inline-flex items-center">
       <select
         aria-label="Select song version"
-        title={currentOption?.label}
+        title={currentSong ? getVersionLabel(currentSong) : undefined}
         value={normalizedCurrentId}
         onChange={(e) => {
           const chosen = versions.find(
             (v) => v._id.replace(/^drafts\./, '') === e.target.value
           )
           if (chosen) {
-            router.push(`${basePath}/${encodeSlugPath(chosen.slug)}`)
+            onSelect(chosen)
           }
         }}
         className="appearance-none rounded-xl border border-stone-200/90 bg-stone-50/90 py-1.5 pr-7 pl-2.5 text-xs font-semibold text-stone-700 transition hover:border-amber-300/70 focus:border-amber-500/60 focus:outline-none dark:border-stone-700/70 dark:bg-stone-800/70 dark:text-stone-200 dark:hover:border-amber-500/30"
@@ -54,7 +56,7 @@ export default function VersionSelector({
             value={v._id.replace(/^drafts\./, '')}
             className="bg-stone-50 text-stone-800 dark:bg-stone-800 dark:text-stone-100"
           >
-            {truncateLabel(v.label)}
+            {truncateLabel(getVersionLabel(v))}
           </option>
         ))}
       </select>

@@ -4,9 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, ChevronRight, RotateCcw } from 'lucide-react'
 import {
+  encodeSlugPath,
   expandSongLines,
   type Song,
-  type SongVersionOption,
 } from '@/sanity/lib/queries'
 import { accentText, backButton, muted } from './styles'
 import LyricStageCard from './rehearsal/LyricStageCard'
@@ -18,7 +18,7 @@ import { useVoiceFilter } from './rehearsal/useVoiceFilter'
 
 interface SongRehearsalViewProps {
   song: Song
-  versions?: SongVersionOption[]
+  versions?: Song[]
   versionBasePath?: string
   backHref: string
   backLabel: string
@@ -38,6 +38,7 @@ export default function SongRehearsalView({
   playlistTitle,
   nextSong,
 }: SongRehearsalViewProps) {
+  const [activeSong, setActiveSong] = useState<Song>(song)
   // -1 = title screen before revealing line 1; 0..N-1 = active line
   const [lineIndex, setLineIndex] = useState<number>(-1)
   const [swipeAnimation, setSwipeAnimation] = useState<{
@@ -45,7 +46,11 @@ export default function SongRehearsalView({
     direction: 'next' | 'prev'
   } | null>(null)
 
-  const allLines = useMemo(() => expandSongLines(song), [song])
+  useEffect(() => {
+    setActiveSong(song)
+  }, [song])
+
+  const allLines = useMemo(() => expandSongLines(activeSong), [activeSong])
   const { availableVoices, selectedVoices, filteredLines, toggleVoice } =
     useVoiceFilter(allLines)
 
@@ -56,7 +61,16 @@ export default function SongRehearsalView({
   useEffect(() => {
     setSwipeAnimation(null)
     setLineIndex(-1)
-  }, [song._id])
+  }, [activeSong._id])
+
+  const handleSelectVersion = useCallback(
+    (chosen: Song) => {
+      setActiveSong(chosen)
+      const nextUrl = `${versionBasePath}/${encodeSlugPath(chosen.slug)}`
+      window.history.replaceState(null, '', nextUrl)
+    },
+    [versionBasePath]
+  )
 
   useEffect(() => {
     setLineIndex((prev) => (prev >= totalLines ? totalLines - 1 : prev))
@@ -164,8 +178,8 @@ export default function SongRehearsalView({
         <div className="flex justify-end px-4 pt-3">
           <VersionSelector
             versions={versions}
-            currentSongId={song._id}
-            basePath={versionBasePath}
+            currentSongId={activeSong._id}
+            onSelect={handleSelectVersion}
           />
         </div>
       )}
@@ -183,11 +197,11 @@ export default function SongRehearsalView({
             </p>
           )}
           <h1 className="text-xl font-bold tracking-tight text-stone-700 sm:text-2xl dark:text-stone-200">
-            {song.title}
+            {activeSong.title}
           </h1>
-          {song.versionName?.trim() && versions.length <= 1 && (
+          {activeSong.versionName?.trim() && versions.length <= 1 && (
             <p className={`mt-1 text-xs font-medium ${accentText}`}>
-              {song.versionName.trim()}
+              {activeSong.versionName.trim()}
             </p>
           )}
         </div>
