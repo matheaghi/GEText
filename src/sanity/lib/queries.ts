@@ -25,13 +25,6 @@ export interface Song {
   verseLines?: string[]
 }
 
-export interface SongVersionOption {
-  _id: string
-  slug: string
-  label: string
-  isOriginal: boolean
-}
-
 export interface Playlist {
   _id: string
   slug: string
@@ -120,12 +113,8 @@ export function formatSongSummary(song: Song): string {
 `
 
     const SONGS_QUERY = `*[_type == "song" && !defined(original)] | order(title asc) { ${SONG_FIELDS} }`
-    const SONG_VERSIONS_QUERY = `*[_type == "song" && (_id == $rootId || original._ref == $rootId)] | order(defined(original) asc, versionName asc, title asc) {
-  _id,
-  "slug": coalesce(slug.current, _id),
-  title,
-  versionName,
-  "isOriginal": !defined(original)
+    const SONG_VERSIONS_QUERY = `*[_type == "song" && (_id == $rootId || original._ref == $rootId)] | order(versionName asc, title asc) {
+  ${SONG_FIELDS}
 }`
     const SONG_BY_SLUG_QUERY = `*[_type == "song" && (slug.current == $slug || _id == $slug)][0] { ${SONG_FIELDS} }`
     const PLAYLISTS_QUERY = `*[_type == "playlist"] | order(title asc) {
@@ -191,33 +180,18 @@ export async function getSongBySlug(slug: string): Promise<Song | null> {
   )
 }
 
-export async function getSongVersions(
-  song: Song
-): Promise<SongVersionOption[]> {
+export async function getSongVersions(song: Song): Promise<Song[]> {
   const rootId = (song.originalId || song._id).replace(/^drafts\./, '')
   return withSanityFallback(async (sanity) => {
-    const rows = await sanity.fetch<
-      Array<{
-        _id: string
-        slug: string
-        title: string
-        versionName?: string | null
-        isOriginal: boolean
-      }>
-    >(SONG_VERSIONS_QUERY, { rootId }, { cache: 'no-store' })
-
-    const mapped = (rows || []).map((row) => ({
-      _id: row._id,
-      slug: row.slug,
-      isOriginal: row.isOriginal,
-      label: row.isOriginal
-        ? 'Original'
-        : row.versionName?.trim() || row.title,
-    }))
-
+    const rows = await sanity.fetch<Song[]>(
+      SONG_VERSIONS_QUERY,
+      { rootId },
+      { cache: 'no-store' }
+    )
+    const list = rows || []
     // Keep Original first
-    mapped.sort((a, b) => Number(b.isOriginal) - Number(a.isOriginal))
-    return mapped
+    list.sort((a, b) => Number(!b.originalId) - Number(!a.originalId))
+    return list
   }, [])
 }
 
